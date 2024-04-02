@@ -17,24 +17,18 @@ def pickle_dump_vector_list(dump_filename : str, list : list):
 #Función para vectorizar y dumpear vector
 # vector_representaion_type -> 0 = frequency ;  1 = binarized ; 2 = TF-IDF
 def vectorize(corpus : list, vectorizer_token_pattern : str, vector_representation_type : int, vector_n_gram_range : tuple):
-    # #Verificar si el archivo de dumpeo existe
-    # if(os.path.exists(dump_filename)):
-    #     print("Archivo \"", dump_filename,"\" ya existe")
-    # #En caso de que el archivo de dumpeo no existe se creara el vector y se dumpeara en el archivo especificado por "dump_filename"    
-    # else:
-        #Verificar que el tipo de representación sea de tipo 2
         x = None
         if(vector_representation_type == 2):
 
             #Crear vectorizador de tfidf
-            count_vectorizer = TfidfVectorizer(ngram_range=vector_n_gram_range,token_pattern=vectorizer_token_pattern)
-            x = count_vectorizer.fit_transform(corpus) #Realizar fit y transform al vectorizador de tf-idf
-            print(x.toarray())
-            return x
+            tfidf_vectorizer = TfidfVectorizer(ngram_range=vector_n_gram_range,token_pattern=vectorizer_token_pattern)
+            x = tfidf_vectorizer.fit_transform(corpus) #Realizar fit y transform al vectorizador de tf-idf
+            print("Vectorizador: \n",tfidf_vectorizer,"\n\nVector: \n", x.toarray(),"\n\n")
+            return (tfidf_vectorizer,x) #Devolver tupla con el vectorizador tfidf y el vector X
 
         #Si la representación no es de tipo TF-IDF entonces es de frequencia o binarizado    
         else:
-            is_binary = None
+            is_binary = None #Intuir que el Tipo de representación es ninguno
             #Verificar que el tipo de representación sea de tipo 0
             if(vector_representation_type == 0):
                 is_binary = False
@@ -44,13 +38,13 @@ def vectorize(corpus : list, vectorizer_token_pattern : str, vector_representati
             #En caso de que la representación sea una que no haya sido establecida    
             else:
                 print("Tipo de representación desconocido")
-                return x;    
+                return None;    
 
             #Crear vectorizador de conteo
             count_vectorizer = CountVectorizer(binary=is_binary,ngram_range=vector_n_gram_range,token_pattern=vectorizer_token_pattern)
             x = count_vectorizer.fit_transform(corpus) #Realizar fit y transform al vectorizador de conteo
-            print(x.toarray())
-            return x
+            print("Vectorizador: \n",count_vectorizer,"\n\nVector: \n", x.toarray(),"\n\n")
+            return (count_vectorizer,x) #Devolver tupla con el vectorizador de contador  y el vector X
 
 #Abrir archivo con datos normalizados
 with(open(NORMALIZED_DATA_FILENAME,encoding="UTF-8")) as csv_data:
@@ -74,17 +68,17 @@ with(open(NORMALIZED_DATA_FILENAME,encoding="UTF-8")) as csv_data:
         print("Cargando lista de vectores del archivo")
         #Si si existe, entonces lo abrira para cargarlo
         with open(DUMP_FILENAME,"rb") as dump_file:
-            vector_list = pickle.load(dump_file) #Cargar lista de vectores
-            #Debug: Imprimir elementos de la lista de vectores
-            for v in vector_list:
-                print(v.toarray())
+            tuple_list = tuple(pickle.load(dump_file)) #Cargar lista de vectores
+            #Debug: Imprimir elementos de la lista de tuplas
+            for t in tuple_list:
+                print(t[1])
     else:
-        vectors_list = [] #Lista de vectores donde se almacenaran los vectores
+        tuple_list = [] #Arreglo en donde se guardaran la tupla del vector con su vectorizador
         #Recorrer en lista de corpus
         for corpus in corpus_list:
             #Recorrer en lista de ngramas
             for ngram in ngram_list:
                 #Recorrer en los tipos de representación del vector
                 for type in range(0,3):
-                    vectors_list.append(vectorize(corpus,TOKEN_PATTERN,type,ngram)) #Agregar representación vectorial del corpus a la lista de vectores
-        pickle_dump_vector_list(DUMP_FILENAME,vectors_list) #Dumpear lista de vectores
+                    tuple_list.append(vectorize(corpus,TOKEN_PATTERN,type,ngram)) #Agregar tupla con el vectorizador y representación vectorial del corpus a la lista de vectores
+        pickle_dump_vector_list(DUMP_FILENAME,tuple_list) #Dumpear lista de tuplas
